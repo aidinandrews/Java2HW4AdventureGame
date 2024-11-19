@@ -23,7 +23,8 @@ public class Adventure {
 	private static final Map<String, String> synonyms = new HashMap<>();
 	private static AdvRoom currentRoom;
 	private static final ArrayList<AdvObject> inventory = new ArrayList<>();
-	private static final boolean RUN_TEST = true;
+	private static final boolean RUN_TEST = false;
+	private static final boolean ALLOW_CUSTOM_GAMES = false;
 
 	public Adventure() {
 		assert !rooms.isEmpty() : "There are no rooms to explore in this adventure!";
@@ -83,6 +84,7 @@ public class Adventure {
 		String[] names;
 		if (input.equals("default")) {
 			gameListDirectory[0] = "src/main/resources";
+			gameListDirectory[0] = "";
 			return getGameOptions(gameListDirectory[0]);
 		}
 		else {
@@ -95,6 +97,7 @@ public class Adventure {
 				input = scan.nextLine();
 				if (input.equals("default")) {
 					gameListDirectory[0] = "src/main/resources";
+					gameListDirectory[0] = "";
 					return getGameOptions(gameListDirectory[0]);
 				}
 				gameListDirectory[0] = input;
@@ -147,6 +150,8 @@ public class Adventure {
 	 * @param gameDirectory is the directory that contains the ...Rooms.txt file.
 	 */
 	private static void getRooms(String gameDirectory) {
+		rooms.clear();
+
 		Scanner s;
 		File roomsFile = new File(gameDirectory + "Rooms.txt");
 
@@ -231,29 +236,43 @@ public class Adventure {
 	}
 
 	/**
+	 * Sets up all the data structures for a new adventure.
+	 */
+	private static void setup() {
+		runGame = true;
+		inventory.clear();
+		commands.clear();
+		rooms.clear();
+		objects.clear();
+		synonyms.clear();
+
+		String gameDirectory;
+
+		while (rooms.isEmpty()) {
+			if (ALLOW_CUSTOM_GAMES) {
+				if (RUN_TEST) gameDirectory = "src/main/resources/Crowther";
+				else gameDirectory = chooseGame();
+				if (gameDirectory == null) return;
+			}
+			else { // unit tests:
+				gameDirectory = scan.nextLine();
+			}
+
+			setCommandMap();
+			getRooms(gameDirectory);
+			getObjects(gameDirectory);
+			getSynonyms(gameDirectory);
+
+			if (rooms.isEmpty())
+				System.out.println("The game has no rooms!  Please select a different game.");
+		}
+	}
+
+	/**
 	 * Runs the adventure program
 	 */
 	public static void main(String[] args) {
-		String gameDirectory;
-		while (rooms.isEmpty()) {
-			if (RUN_TEST) {
-				gameDirectory = "src/main/resources/Crowther";
-			}
-			else {
-				gameDirectory = chooseGame();
-			}
-
-			if (gameDirectory == null) return;
-			getRooms(gameDirectory);
-			getObjects(gameDirectory);
-			setCommandMap();
-			getSynonyms(gameDirectory);
-
-			if (rooms.isEmpty()) {
-				System.out.println("The game has no rooms!  Please select a different game.");
-			}
-		}
-
+		setup();
 		Adventure adventure = new Adventure();
 		adventure.run();
 	}
@@ -265,11 +284,10 @@ public class Adventure {
 	private AdvCommand.Info getCommand() {
 		String input = scan.nextLine().trim().toUpperCase();
 		System.out.println(input);
-		String[] commandParts = input.split(" ", 100);
+		String[] commandParts = input.split(" ", 64);
 		AdvCommand.Info info = new AdvCommand.Info();
 
-		if (!synonyms.containsKey(commandParts[0]))
-			return info;
+		if (!synonyms.containsKey(commandParts[0])) return info;
 
 		String commandKey = synonyms.get(commandParts[0]);
 		info.command = commands.get(commandKey);
@@ -288,20 +306,16 @@ public class Adventure {
 	 */
 	private void run() {
 		while (runGame) {
-			boolean moveRooms = false;
+			int roomIndex = currentRoom.getRoomIndex();
 
-			while (!moveRooms && runGame) {
+			while (runGame && roomIndex == currentRoom.getRoomIndex()) {
 				AdvCommand.Info commandInfo = getCommand();
 
-				if (commandInfo.command == null) {
+				if (commandInfo.command == null)
 					System.out.println("invalid input");
-					continue;
-				}
-
-				int roomIndex = currentRoom.getRoomIndex();
-				commandInfo.command.execute(this, commandInfo.modifiers);
-				// If the command was a successful move command, current room will have a new index.
-				if (roomIndex != currentRoom.getRoomIndex()) break;
+				else
+					// roomIndex will not match if the command is a valid move command, breaking the while loop.
+					commandInfo.command.execute(this, commandInfo.modifiers);
 			}
 		}
 	}
@@ -481,7 +495,7 @@ public class Adventure {
 			case 5 -> " uncomfortably in both arms.";
 			case 6 -> " stacked teetering in your hands.";
 			case 7 -> " strenuously on your person.";
-			default -> " impossibly wherever possible.";
+			default -> " impossibly.";
 		};
 		System.out.println(flavor);
 	}
@@ -502,7 +516,7 @@ public class Adventure {
 		}
 
 		for (String m : modifiers) {
-			AdvObject o = objects.get(m);
+			AdvObject o = objects.get(synonyms.get(m));
 			if (o == null) continue;
 
 			if (currentRoom.containsObject(o)) {
@@ -552,8 +566,11 @@ public class Adventure {
 
 		for (String m : modifiers) {
 			boolean found = false;
+			String s = synonyms.get(m);
+			if (s == null) continue;
+
 			for (AdvObject i : inventory) {
-				if (m.equals(i.getName())) {
+				if (s.equals(i.getName())) {
 					currentRoom.addObject(i);
 					inventory.remove(i);
 					System.out.println(i.getName().toLowerCase() + " dropped.");

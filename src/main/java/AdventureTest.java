@@ -12,7 +12,7 @@ public class AdventureTest {
 
 	public static void testSmallAdventure() {
 		try {
-			Scanner scan = new Scanner(new File("src/main/resources/SmallTest.txt"));
+			Scanner scan = new Scanner(new File("SmallTest.txt"));
 			Adventure.setScanner(scan);
 			Adventure.main(null);
 		} catch (IOException e) {
@@ -23,7 +23,7 @@ public class AdventureTest {
 
 	public static void testCrowtherAdventure() {
 		try {
-			Scanner scan = new Scanner(new File("src/main/resources/CrowtherTest.txt"));
+			Scanner scan = new Scanner(new File("CrowtherTest.txt"));
 			Adventure.setScanner(scan);
 			Adventure.main(null);
 		} catch (IOException e) {
@@ -31,5 +31,4 @@ public class AdventureTest {
 					.println("To test, place the CrowtherTest.txt file in your project folder");
 		}
 	}
-
 }
