@@ -84,7 +84,6 @@ public class Adventure {
 		String[] names;
 		if (input.equals("default")) {
 			gameListDirectory[0] = "src/main/resources";
-			gameListDirectory[0] = "";
 			return getGameOptions(gameListDirectory[0]);
 		}
 		else {
@@ -97,7 +96,6 @@ public class Adventure {
 				input = scan.nextLine();
 				if (input.equals("default")) {
 					gameListDirectory[0] = "src/main/resources";
-					gameListDirectory[0] = "";
 					return getGameOptions(gameListDirectory[0]);
 				}
 				gameListDirectory[0] = input;
